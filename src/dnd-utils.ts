@@ -77,8 +77,33 @@ export function setDragData( event:DragEvent, data:DragDropData, effectAllowed:E
       //   the one we want to display now by setting effectAllowed.
       const effectsAllowed = filterEffects( DROP_EFFECTS, effectAllowed );
       event.dataTransfer.effectAllowed = effectsAllowed[ 0 ];
+      
+      /*
+      BUG FIX - ISSUE: in IE11 when dragging in a NEW Workflow Node the clipboard gets overwritten with the
+      node model JSON data when event.dataTransfer.setData() below is called.
+      this causes issues when a user has previously copied text to the clipboard with the idea of pasting it,
+      as the user's intended data to paste is overwritten just by doing an un-related action ie: simply dragging in a New Workflow Node.
+
+      BUG FIX: store the value of clipboard before event.dataTransfer.setData() is called and then restore the data to clipboard.
+    */
+    try {
+      if(window['clipboardData'] && window['clipboardData'].getData('Text') ){
+        var preTransferClipboardData = window['clipboardData'].getData('Text');
+      }
+    } catch(e){
+      //do nothing just swallow any clipboard related errors
+    }
 
       event.dataTransfer.setData( MSIE_MIME_TYPE, dataString );
+      
+    // clipboard data is restored here as part of BUG FIX referenced above
+    try {
+          if(window['clipboardData'] && preTransferClipboardData){
+          window['clipboardData'].setData('Text', preTransferClipboardData);
+          }
+        } catch(e){
+          //do nothing just swallow any clipboard related errors
+        }
     }
   }
 }
